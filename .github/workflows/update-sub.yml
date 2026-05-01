@@ -11,16 +11,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Fetch nodes
+      - name: Download real nodes
         run: |
-          PAGE=$(curl -s -L -A "Mozilla/5.0" "https://vpngocn.com/mianfei-jiedian/")
+          PAGE=$(curl -s -L "https://vpngocn.com/mianfei-jiedian/")
           SUB_LINK=$(echo "$PAGE" | grep -o 'https://[^"]*tosslk.xyz/[^"]*' | head -n1)
-          curl -s -L "$SUB_LINK" -o sub.txt
+          curl -s -L "$SUB_LINK" > sub.txt
+          echo "Downloaded nodes from $SUB_LINK"
 
-      - name: Commit and push
+      - name: Commit sub.txt
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
           git add sub.txt
-          git commit -m "Update subscription $(date +'%Y-%m-%d %H:%M')" || echo "No change"
+          git commit -m "Update nodes $(date)" || echo "No new nodes"
           git push
