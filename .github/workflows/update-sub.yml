@@ -1,27 +1,34 @@
-name: Auto Update Free Sub
+name: Auto Update Free Sub to Gist
 
 on:
   schedule:
-    - cron: '0 */2 * * *'
+    - cron: '0 */2 * * *'   # 每2小时更新
   workflow_dispatch:
 
 jobs:
-  fetch:
+  update:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Download real nodes
+      - name: Fetch latest nodes from website
         run: |
-          PAGE=$(curl -s -L "https://vpngocn.com/mianfei-jiedian/")
+          PAGE=$(curl -s -L -A "Mozilla/5.0" "https://vpngocn.com/mianfei-jiedian/")
           SUB_LINK=$(echo "$PAGE" | grep -o 'https://[^"]*tosslk.xyz/[^"]*' | head -n1)
           curl -s -L "$SUB_LINK" > sub.txt
-          echo "Downloaded nodes from $SUB_LINK"
+          echo "SUB_LINK=$SUB_LINK" >> $GITHUB_ENV
+          echo "✅ 抓取成功"
 
-      - name: Commit sub.txt
-        run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-          git add sub.txt
-          git commit -m "Update nodes $(date)" || echo "No new nodes"
-          git push
+      - name: Update Gist
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const content = fs.readFileSync('sub.txt', 'utf8');
+            await github.request('PATCH /gists/{gist_id}', {
+              gist_id: '07f00885129d55779c9acdc065d26f24',
+              files: {
+                'sub.txt': {
+                  content: content
+                }
+              }
+            });
+            console.log('✅ Gist 更新成功');
