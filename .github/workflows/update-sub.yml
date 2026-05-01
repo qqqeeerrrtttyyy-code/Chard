@@ -2,29 +2,29 @@ name: Auto Update Free Sub
 
 on:
   schedule:
-    - cron: '0 */2 * * *'
+    - cron: '0 */3 * * *'
   workflow_dispatch:
 
 jobs:
   fetch:
     runs-on: ubuntu-latest
     steps:
-      - name: Get latest nodes
+      - name: Fetch latest subscription
         run: |
+          echo "正在抓取 https://vpngocn.com/mianfei-jiedian/"
           PAGE=$(curl -s -L -A "Mozilla/5.0" "https://vpngocn.com/mianfei-jiedian/")
           SUB_LINK=$(echo "$PAGE" | grep -o 'https://[^"]*tosslk.xyz/[^"]*' | head -n1)
           
           if [ -n "$SUB_LINK" ]; then
-            echo "抓取地址: $SUB_LINK"
-            # 关键：直接下载节点内容（通常是base64或vmess列表）
-            curl -s -L "$SUB_LINK" -o sub.txt
-            echo "节点内容已保存"
+            echo "✅ 抓取成功：$SUB_LINK"
+            echo "$SUB_LINK" > sub.txt
+            echo "SUB_LINK=$SUB_LINK" >> $GITHUB_ENV
           else
-            echo "抓取失败"
+            echo "❌ 抓取失败"
             exit 1
           fi
 
-      - name: Upload subscription
+      - name: Upload sub.txt as artifact
         uses: actions/upload-artifact@v4
         with:
           name: subscription
