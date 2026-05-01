@@ -1,0 +1,35 @@
+name: Auto Update Free Sub
+
+on:
+  schedule:
+    - cron: '0 */1 * * *'     # 每6小时自动更新一次
+  workflow_dispatch:          # 可以手动点击运行测试
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch latest subscription from vpngocn
+        run: |
+          echo "正在抓取最新订阅..."
+          PAGE=$(curl -s -L -A "Mozilla/5.0" "https://vpngocn.com/mianfei-jiedian/")
+          SUB_LINK=$(echo "$PAGE" | grep -o 'https://[^"]*tosslk.xyz/[^"]*' | head -n1)
+          
+          if [ -n "$SUB_LINK" ]; then
+            echo "✅ 成功提取到订阅链接：$SUB_LINK"
+            echo "SUB_LINK=$SUB_LINK" >> $GITHUB_ENV
+            echo "$SUB_LINK" > sub.txt
+          else
+            echo "❌ 未找到订阅链接"
+            exit 1
+          fi
+
+      - name: Commit and Push sub.txt
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add sub.txt
+          git commit -m "Update subscription $(date +'%Y-%m-%d %H:%M')" || echo "No changes"
+          git push
