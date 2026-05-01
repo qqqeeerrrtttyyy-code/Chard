@@ -2,30 +2,25 @@ name: Auto Update Free Sub
 
 on:
   schedule:
-    - cron: '0 */3 * * *'
+    - cron: '0 */2 * * *'
   workflow_dispatch:
 
 jobs:
   fetch:
     runs-on: ubuntu-latest
     steps:
-      - name: Fetch latest subscription
+      - uses: actions/checkout@v4
+
+      - name: Fetch nodes
         run: |
-          echo "正在抓取 https://vpngocn.com/mianfei-jiedian/"
           PAGE=$(curl -s -L -A "Mozilla/5.0" "https://vpngocn.com/mianfei-jiedian/")
           SUB_LINK=$(echo "$PAGE" | grep -o 'https://[^"]*tosslk.xyz/[^"]*' | head -n1)
-          
-          if [ -n "$SUB_LINK" ]; then
-            echo "✅ 抓取成功：$SUB_LINK"
-            echo "$SUB_LINK" > sub.txt
-            echo "SUB_LINK=$SUB_LINK" >> $GITHUB_ENV
-          else
-            echo "❌ 抓取失败"
-            exit 1
-          fi
+          curl -s -L "$SUB_LINK" -o sub.txt
 
-      - name: Upload sub.txt as artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: subscription
-          path: sub.txt
+      - name: Commit and push
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add sub.txt
+          git commit -m "Update subscription $(date +'%Y-%m-%d %H:%M')" || echo "No change"
+          git push
