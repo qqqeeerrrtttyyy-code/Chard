@@ -1,38 +1,41 @@
-name: Update Gist Subscription
+name: Auto Update Subscription
 
 on:
   schedule:
-    - cron: '0 */2 * * *'   # 每2小时
+    - cron: '0 */2 * * *'
   workflow_dispatch:
 
 jobs:
-  update-gist:
+  update:
     runs-on: ubuntu-latest
     steps:
-            - name: Fetch latest nodes
-        run: |
-          PAGE=$(curl -s -L -A "Mozilla/5.0 (iPad; CPU OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1" "https://vpngocn.com/mianfei-jiedian/")
-          SUB_LINK=$(echo "$PAGE" | grep -o 'https://[^"]*tosslk.xyz/[^"]*' | head -n1)
-          echo "提取到的地址: $SUB_LINK"
-          
-          # 再次伪装抓取节点内容
-          curl -s -L -A "Mozilla/5.0 (iPad; CPU OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1" \
-               -H "Referer: https://vpngocn.com/" \
-               "$SUB_LINK" > sub.txt
-          
-          echo "文件大小: $(wc -c < sub.txt) 字节"
+      - uses: actions/checkout@v4
 
-      - name: Update Gist
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.GIST_TOKEN }}
-          script: |
-            const fs = require('fs');
-            const content = fs.readFileSync('sub.txt', 'utf8');
-            await github.request('PATCH /gists/{gist_id}', {
-              gist_id: '07f00885129d55779c9acdc065d26f24',
-              files: {
-                'sub.txt': { content: content }
-              }
-            });
-            console.log('✅ Gist 更新完成');
+      - name: Fetch latest subscription
+        run: |
+          echo "正在访问网站..."
+          PAGE=$(curl -s -L -A "Mozilla/5.0 (iPad; CPU OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1" \
+                       -H "Referer: https://vpngocn.com/" \
+                       "https://vpngocn.com/mianfei-jiedian/")
+          
+          SUB_LINK=$(echo "$PAGE" | grep -o 'https://[^"]*tosslk.xyz/[^"]*' | head -n1)
+          echo "提取链接: $SUB_LINK"
+          
+          if [ -n "$SUB_LINK" ]; then
+            echo "正在下载节点..."
+            curl -s -L -A "Mozilla/5.0 (iPad; CPU OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1" \
+                 -H "Referer: https://vpngocn.com/" \
+                 "$SUB_LINK" > sub.txt
+            echo "下载完成，文件大小 $(wc -c < sub.txt) 字节"
+          else
+            echo "❌ 提取失败"
+            exit 1
+          fi
+
+      - name: Commit to repository
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add sub.txt
+          git commit -m "Update subscription $(date +'%Y-%m-%d %H:%M')" || echo "No changes to commit"
+          git push
