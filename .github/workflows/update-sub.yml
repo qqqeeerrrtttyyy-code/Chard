@@ -9,12 +9,18 @@ jobs:
   update-gist:
     runs-on: ubuntu-latest
     steps:
-      - name: Fetch latest nodes
+            - name: Fetch latest nodes
         run: |
-          PAGE=$(curl -s -L -A "Mozilla/5.0" "https://vpngocn.com/mianfei-jiedian/")
+          PAGE=$(curl -s -L -A "Mozilla/5.0 (iPad; CPU OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1" "https://vpngocn.com/mianfei-jiedian/")
           SUB_LINK=$(echo "$PAGE" | grep -o 'https://[^"]*tosslk.xyz/[^"]*' | head -n1)
-          curl -s -L "$SUB_LINK" > sub.txt
-          echo "✅ 获取成功"
+          echo "提取到的地址: $SUB_LINK"
+          
+          # 再次伪装抓取节点内容
+          curl -s -L -A "Mozilla/5.0 (iPad; CPU OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1" \
+               -H "Referer: https://vpngocn.com/" \
+               "$SUB_LINK" > sub.txt
+          
+          echo "文件大小: $(wc -c < sub.txt) 字节"
 
       - name: Update Gist
         uses: actions/github-script@v7
